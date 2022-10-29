@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, Request } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UsersService } from './users.service';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -21,5 +21,33 @@ export class UsersController {
   @Get()
   getAll() {
     return this.usersService.getAllUsers();
+  }
+
+  @ApiOperation({ summary: 'User data update' })
+  @ApiResponse({ type: User, status: 200 })
+  @Put('/updatePoints')
+  async putExperience(
+    @Body() { points }: { points: number },
+    @Request() req: any,
+  ) {
+    return this.usersService.putUserExperience(
+      req.headers.authorization,
+      points,
+    );
+  }
+
+  @Post('/user')
+  async getUser(@Body() { email }: { email: string }) {
+    return this.usersService.getUserData(email);
+  }
+
+  @Get('/userBadges')
+  async getBadges(@Request() req: any) {
+    return this.usersService.getUserBadges(req.headers.authorization);
+  }
+
+  @Get('/leaderboard')
+  async getLeaderboard() {
+    return this.usersService.getUsersLeaderboard();
   }
 }

@@ -19,16 +19,30 @@ export class AuthService {
 
   async login(dto: CreateUserDto) {
     const user = await this.userService.getUserByEmail(dto.email);
+
     if (!user) {
       throw new HttpException('User does not exist', HttpStatus.BAD_REQUEST);
     }
 
-    const isPasswordEqual = bcryptjs.compare(dto.password, user.password);
+    const isPasswordEqual = await bcryptjs.compare(dto.password, user.password);
 
     if (!isPasswordEqual) {
       throw new UnauthorizedException({ message: 'Invalid password' });
     }
-    return this.generateToken(user);
+
+    const token = await this.generateToken(user);
+    const rank = await this.userService.getUserRank(user.email);
+    return {
+      email: user.email,
+      name: user.name,
+      token,
+      data: {
+        level: Math.floor(user.totalExperience / 50),
+        totalExperience: user.totalExperience,
+        rank,
+        balance: user.balance,
+      },
+    };
   }
 
   async registration(dto: CreateUserDto) {
@@ -44,7 +58,19 @@ export class AuthService {
       ...dto,
       password: hashedPassword,
     });
-    return this.generateToken(newUser);
+    const token = await this.generateToken(newUser);
+    const rank = await this.userService.getUserRank(newUser.email);
+    return {
+      token,
+      email: newUser.email,
+      name: newUser.name,
+      data: {
+        level: Math.floor(newUser.totalExperience / 50),
+        totalExperience: newUser.totalExperience,
+        rank,
+        balance: newUser.balance,
+      },
+    };
   }
 
   async generateToken(user: User) {
@@ -52,8 +78,6 @@ export class AuthService {
       email: user.email,
       password: user.password,
     };
-    return {
-      token: this.jwtService.sign(payload),
-    };
+    return this.jwtService.sign(payload);
   }
 }
